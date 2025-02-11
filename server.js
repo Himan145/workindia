@@ -1,4 +1,3 @@
-//require("dotenv").config();
 const express = require("express");
 const mysql = require("mysql2/promise");
 const bcrypt = require("bcryptjs");
@@ -12,7 +11,7 @@ const PORT = 5000;
 const JWT_SECRET ="supersecretkey";
 const ADMIN_API_KEY ="secureapikey";
 
-// MySQL Database Connection
+
 const db = mysql.createPool({
     host: "localhost",
     user: "root",
@@ -20,7 +19,7 @@ const db = mysql.createPool({
     database: "workindia",
 });
 
-// Middleware for Authentication
+
 const authenticateUser = async (req, res, next) => {
     const token = req.header("Authorization");
     if (!token) return res.status(401).json({ error: "Access denied" });
@@ -34,7 +33,7 @@ const authenticateUser = async (req, res, next) => {
     }
 };
 
-// Middleware for Admin Authentication
+
 const authenticateAdmin = (req, res, next) => {
     const apiKey = req.headers["x-api-key"];
     console.log(req.headers);
@@ -45,7 +44,7 @@ const authenticateAdmin = (req, res, next) => {
     next();
 };
 
-// **1. Register User**
+
 app.post("/register", async (req, res) => {
     try {
         const { name, email, password, role } = req.body;
@@ -62,7 +61,7 @@ app.post("/register", async (req, res) => {
     }
 });
 
-// **2. Login User**
+
 app.post("/login", async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -82,7 +81,7 @@ app.post("/login", async (req, res) => {
     }
 });
 
-// **3. Add a New Train (Admin)**
+
 app.post("/addtrains", authenticateAdmin, async (req, res) => {
     try {
         const { train_name, source, destination, total_seats } = req.body;
@@ -97,7 +96,7 @@ app.post("/addtrains", authenticateAdmin, async (req, res) => {
     }
 });
 
-// **4. Get Seat Availability**
+
 app.post("/available_seat_trains", async (req, res) => {
     try {
         const { source, destination } = req.body;
@@ -112,7 +111,7 @@ app.post("/available_seat_trains", async (req, res) => {
     }
 });
 
-// **5. Book a Seat (Concurrency Handling)**
+
 app.post("/book", authenticateUser, async (req, res) => {
     const { train_id } = req.body;
     const user_id = req.user.id;
@@ -121,7 +120,7 @@ app.post("/book", authenticateUser, async (req, res) => {
     try {
         await connection.beginTransaction();
 
-        // Check seat availability (with row lock)
+        
         const [train] = await connection.execute(
             "SELECT available_seats FROM trains WHERE id = ? FOR UPDATE",
             [train_id]
@@ -131,13 +130,13 @@ app.post("/book", authenticateUser, async (req, res) => {
             throw new Error("No seats available");
         }
 
-        // Deduct 1 seat
+    
         await connection.execute(
             "UPDATE trains SET available_seats = available_seats - 1 WHERE id = ?",
             [train_id]
         );
 
-        // Insert booking record
+        
         await connection.execute(
             "INSERT INTO bookings (user_id, train_id) VALUES (?, ?)",
             [user_id, train_id]
@@ -153,7 +152,7 @@ app.post("/book", authenticateUser, async (req, res) => {
     }
 });
 
-// **6. Get Booking Details**
+
 app.get("/bookings", authenticateUser, async (req, res) => {
     try {
         const user_id = req.user.id;
